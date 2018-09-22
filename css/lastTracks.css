@@ -1,0 +1,33 @@
+body {
+    font-family: verdana; sans-serif;
+    font-size: 12px;
+}
+
+h1 {
+    font-size: 16px;
+    margin-bottom: 5px;
+}
+
+h2 {
+    font-size: 14px;
+    margin-bottom: 3px;
+}
+
+.userScrobbleStall {
+    margin-left: 20px;
+    margin-bottom: 30px;
+}
+
+.userScrobbleDetails {
+    margin-top: 4px;
+    margin-left: 4px;
+    font-size: 10px;
+}
+
+.trackArtist {
+    margin-left: 10px;
+}
+
+.trackName {
+
+}
