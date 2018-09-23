@@ -3,22 +3,30 @@ var lastTracks = {
     live: true,
 
     /**
-     * Configuration settings.  Your API key should be entered here,
-     * as well as the last.fm user name(s) you care to view scrobbles for
-     *
-     * TODO - load this in dynamically
+     * Configuration settings for API key and last.fm user names,
+     * These are passed in as query parameters, e.g.:
+     *      ?apiKey=1234abc&userNames=myUserName,VanHalen1978
      */
     config: {
         "apiKey": "",
-        "userNames": [
-        ]
+        "userNames": []
     },
 
     /**
      * Runs on page load and does the magic
      */
     initialize: function() {
+        this.getConfiguration();
         this.getScrobbles();
+    },
+
+    /**
+     * Get configurations from the query parameters for the API key and accounts to fetch
+     */
+    getConfiguration: function() {
+        let urlParams = new URLSearchParams(window.location.search);
+        this.config.apiKey = urlParams.get('apiKey');
+        this.config.userNames = urlParams.get("userNames").split(",");
     },
 
     /**
@@ -117,6 +125,7 @@ var lastTracks = {
      * @return the HTML element containing their scrobbles for display
      */
     buildScrobbleDisplayForUser: function(userName, userScrobbleData) {
+
         var userStall = document.createElement("div");
         userStall.className = "userScrobbleStall";
 
@@ -136,67 +145,69 @@ var lastTracks = {
         var userScrobbleBody = document.createElement("div");
         userScrobbleBody.className = "userScrobbleBody";
 
-        var tracks = userScrobbleData.recenttracks.track;
+        // handle error case
+        if(userScrobbleData.error != null) {
+            userScrobbleBody.innerHTML = "User not found: " + userName;
+        }
+        else {
+            var tracks = userScrobbleData.recenttracks.track;
 
-        // Go through each track and build the display
-        for (var i=0; i < tracks.length; i++) {
-            var track = tracks[i];
-            var trackData = document.createElement("div");
+            // Go through each track and build the display
+            for (var i=0; i < tracks.length; i++) {
+                var track = tracks[i];
+                var trackData = document.createElement("div");
 
-            // Now playing status
-            var nowPlaying = false;
-            var trackNowPlaying = document.createElement("span");
-            trackNowPlaying.className = "trackNowPlaying";
-            if (track["@attr"] != null) {
-                if (track["@attr"]["nowplaying"]) {
-                    nowPlaying = true;
-                    trackNowPlaying.innerHTML = "&nbsp;&#127926";
+                // Now playing status
+                var nowPlaying = false;
+                var trackNowPlaying = document.createElement("span");
+                trackNowPlaying.className = "trackNowPlaying";
+                if (track["@attr"] != null) {
+                    if (track["@attr"]["nowplaying"]) {
+                        nowPlaying = true;
+                        trackNowPlaying.innerHTML = "&nbsp;&#127926";
+                    }
                 }
+
+                // Date time
+                var trackDateTime = document.createElement("span");
+                trackDateTime.className = "trackDateTime";
+
+                // We don't get a date/time if the track is currently playing
+                // so just cheat and use the current date/time
+                var trackDateTimeValue;
+                if (nowPlaying) {
+                    var now = new Date();
+                    trackDateTimeValue = now;
+                }
+                else {
+                    var tdt = new Date(track.date.uts * 1000);
+                    trackDateTimeValue = tdt;
+                }
+                trackDateTime.innerHTML = "[" + this.parseTrackDateTimeForDisplay(trackDateTimeValue) + "]";
+
+                // Artist name
+                var trackArtist = document.createElement("span");
+                trackArtist.className = "trackArtist";
+                trackArtist.innerHTML = track.artist["#text"] + "&nbsp;-&nbsp;";
+
+                // Track name
+                var trackName = document.createElement("span");
+                trackName.className = "trackName";
+                trackName.innerHTML = track.name;
+
+                // Put 'em all together
+                trackData.appendChild(trackDateTime);
+                trackData.appendChild(trackArtist);
+                trackData.appendChild(trackName);
+                if (nowPlaying) {
+                    trackData.appendChild(trackNowPlaying);
+                }
+
+                userScrobbleBody.appendChild(trackData);
             }
-
-            // Date time
-            var trackDateTime = document.createElement("span");
-            trackDateTime.className = "trackDateTime";
-
-            // We don't get a date/time if the track is currently playing
-            // so just cheat and use the current date/time
-            var trackDateTimeValue;
-            if (nowPlaying) {
-                var now = new Date();
-                trackDateTimeValue = now;
-            }
-            else {
-                var tdt = new Date(track.date.uts * 1000);
-                trackDateTimeValue = tdt;
-            }
-            trackDateTime.innerHTML = "[" + this.parseTrackDateTimeForDisplay(trackDateTimeValue) + "]";
-
-            // Artist name
-            var trackArtist = document.createElement("span");
-            trackArtist.className = "trackArtist";
-            trackArtist.innerHTML = track.artist["#text"] + "&nbsp;-&nbsp;";
-
-            // Track name
-            var trackName = document.createElement("span");
-            trackName.className = "trackName";
-            trackName.innerHTML = track.name;
-
-            // Put 'em all together
-            trackData.appendChild(trackDateTime);
-            trackData.appendChild(trackArtist);
-            trackData.appendChild(trackName);
-            if (nowPlaying) {
-                trackData.appendChild(trackNowPlaying);
-            }
-
-            userScrobbleBody.appendChild(trackData);
         }
 
         userStall.appendChild(userScrobbleBody);
-
-        var userDetails = document.createElement("div");
-        userDetails.className = "userScrobbleDetails";
-
         return userStall;
     }
 };
