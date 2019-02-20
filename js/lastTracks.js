@@ -1,6 +1,6 @@
 var lastTracks = {
 
-    live: true,
+    live: false,
 
     /**
      * Configuration settings for API key and last.fm user names,
@@ -47,7 +47,7 @@ var lastTracks = {
      * @return scrobble data
      */
     getScrobblesForUser: function(userName) {
-        var scrobbleData = {}
+//        var scrobbleData = {}
 
         var apiKey = this.config.apiKey;
         var limit = 10;
@@ -59,24 +59,7 @@ var lastTracks = {
                     "&format=json";
 
         if (this.live) {
-            fetch(url, {"headers":{"Content-Type":"application/json"}})
-                .then(function(response) {
-                    if (response.status !== 200) {
-                        console.log("received status " + response.status + " from url: " + url);
-                    }
-                    else {
-                        var responseJson = response.json().then(function(scrobbleData) {
-                            var userStall = lastTracks.buildScrobbleDisplayForUser(userName, scrobbleData);
-
-                            var scrobbleBarn = document.getElementById("scrobbleBarn");
-                            scrobbleBarn.appendChild(userStall);
-                        });
-                    }
-                })
-                .catch(function(err) {
-                    console.log("could not fetch url: " + url);
-                    console.log(err);
-                });
+            window.setTimeout(this.pollForScrobbles(url, userName), 5000);
         }
         else {
             // just for testing
@@ -88,6 +71,41 @@ var lastTracks = {
             var scrobbleBarn = document.getElementById("scrobbleBarn");
             scrobbleBarn.appendChild(userStall);
         }
+    },
+
+    /**
+     * Periodically polls for scrobble updates
+     * @param url call to last.fm API
+     * @param userName user whose scrobbles you're just dying to see
+     */
+    pollForScrobbles: function(url, userName) {
+        url = "http://www.cnn.com";
+        console.log(url);
+
+        var pollFunction = this.pollForScrobbles;
+        fetch(url, {"headers":{"Content-Type":"application/json"}})
+            .then(function(response) {
+                if (response.status !== 200) {
+                    console.log("received status " + response.status + " from url: " + url);
+                }
+                else {
+                    var responseJson = response.json().then(function(scrobbleData, pollFunction) {
+                        var userStall = lastTracks.buildScrobbleDisplayForUser(userName, scrobbleData);
+
+                        var scrobbleBarn = document.getElementById("scrobbleBarn");
+                        scrobbleBarn.appendChild(userStall);
+
+//                        window.setTimeout(pollFunction(url, userName), 5000);
+                    });
+                }
+            })
+            .catch(function(err) {
+                console.log("could not fetch url: " + url);
+                console.log(err);
+
+                console.log("trying again?");
+                window.setTimeout(pollFunction, 2000);
+            });
     },
 
     /**
@@ -156,6 +174,7 @@ var lastTracks = {
             for (var i=0; i < tracks.length; i++) {
                 var track = tracks[i];
                 var trackData = document.createElement("div");
+                trackData.className = "track";
 
                 // Now playing status
                 var nowPlaying = false;
